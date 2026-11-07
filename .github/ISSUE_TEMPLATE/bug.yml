@@ -1,0 +1,30 @@
+name: Bug
+description: Something in Artificer (a command, the installer, the sheet) does not work.
+labels: [bug]
+body:
+  - type: dropdown
+    id: tool
+    attributes:
+      label: AI tool
+      options: [Claude Code, Codex, GitHub Copilot (VS Code), OpenCode, Installer, Other]
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options: [Windows, macOS, Linux]
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened and what you expected
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+  - type: input
+    id: version
+    attributes:
+      label: Artificer version

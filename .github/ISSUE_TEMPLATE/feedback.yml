@@ -1,0 +1,43 @@
+name: Usage feedback
+description: Tell us how Artificer worked in a real task.
+labels: [feedback]
+body:
+  - type: dropdown
+    id: tool
+    attributes:
+      label: AI tool
+      options: [Claude Code, Codex, GitHub Copilot (VS Code), OpenCode, Other]
+    validations:
+      required: true
+  - type: input
+    id: model
+    attributes:
+      label: Model
+      placeholder: e.g. claude-sonnet-5-5, gpt-5, a local model
+  - type: dropdown
+    id: level
+    attributes:
+      label: Learning level
+      options: ["off", assist, core, full, not sure]
+  - type: input
+    id: command
+    attributes:
+      label: Command or step
+      placeholder: e.g. /artificer-map, Verify, warm-up
+  - type: textarea
+    id: worked
+    attributes:
+      label: What worked
+  - type: textarea
+    id: slow
+    attributes:
+      label: What was slow or too much text
+  - type: textarea
+    id: control
+    attributes:
+      label: Where you felt you lost control of the code or the decisions
+  - type: input
+    id: version
+    attributes:
+      label: Artificer version
+      placeholder: see the VERSION file

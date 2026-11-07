@@ -1,0 +1,133 @@
+{
+  "version": 1,
+  "attributes": {
+    "reading": {
+      "level": 1,
+      "xp": 0,
+      "xp_to_next": 100,
+      "last_session": null,
+      "trial": {
+        "status": "locked",
+        "last_attempt": null,
+        "failed_criteria": []
+      },
+      "flag": null,
+      "audit_fails": 0
+    },
+    "tracing": {
+      "level": 1,
+      "xp": 0,
+      "xp_to_next": 100,
+      "last_session": null,
+      "trial": {
+        "status": "locked",
+        "last_attempt": null,
+        "failed_criteria": []
+      },
+      "flag": null,
+      "audit_fails": 0
+    },
+    "reviewing": {
+      "level": 1,
+      "xp": 0,
+      "xp_to_next": 100,
+      "last_session": null,
+      "trial": {
+        "status": "locked",
+        "last_attempt": null,
+        "failed_criteria": []
+      },
+      "flag": null,
+      "audit_fails": 0
+    },
+    "debugging": {
+      "level": 1,
+      "xp": 0,
+      "xp_to_next": 100,
+      "last_session": null,
+      "trial": {
+        "status": "locked",
+        "last_attempt": null,
+        "failed_criteria": []
+      },
+      "flag": null,
+      "audit_fails": 0
+    },
+    "code_writing": {
+      "level": 1,
+      "xp": 0,
+      "xp_to_next": 100,
+      "last_session": null,
+      "trial": {
+        "status": "locked",
+        "last_attempt": null,
+        "failed_criteria": []
+      },
+      "flag": null,
+      "audit_fails": 0
+    },
+    "knowledge": {
+      "level": 1,
+      "xp": 0,
+      "xp_to_next": 100,
+      "last_session": null,
+      "trial": {
+        "status": "locked",
+        "last_attempt": null,
+        "failed_criteria": []
+      },
+      "flag": null,
+      "audit_fails": 0
+    },
+    "logic": {
+      "level": 1,
+      "xp": 0,
+      "xp_to_next": 100,
+      "last_session": null,
+      "trial": {
+        "status": "locked",
+        "last_attempt": null,
+        "failed_criteria": []
+      },
+      "flag": null,
+      "audit_fails": 0
+    },
+    "testing": {
+      "level": 1,
+      "xp": 0,
+      "xp_to_next": 100,
+      "last_session": null,
+      "trial": {
+        "status": "locked",
+        "last_attempt": null,
+        "failed_criteria": []
+      },
+      "flag": null,
+      "audit_fails": 0
+    },
+    "data": {
+      "level": 1,
+      "xp": 0,
+      "xp_to_next": 100,
+      "last_session": null,
+      "trial": {
+        "status": "locked",
+        "last_attempt": null,
+        "failed_criteria": []
+      },
+      "flag": null,
+      "audit_fails": 0
+    }
+  },
+  "achievements": [],
+  "counters": {
+    "must_fix_caught": 0
+  },
+  "xp_log": [],
+  "calibration": {
+    "high_right": 0,
+    "high_wrong": 0,
+    "low_right": 0,
+    "low_wrong": 0
+  }
+}

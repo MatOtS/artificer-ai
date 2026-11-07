@@ -1,0 +1,440 @@
+#!/usr/bin/env python3
+"""Render the learner's character sheet from ~/.claude/learning/character.json.
+
+Usage:
+  learn-sheet           write ~/.claude/learning/sheet.html
+  learn-sheet --open    write it and open it in the browser
+  learn-sheet --text    print the text sheet to stdout (no file written)
+
+Numbers come only from the JSON; this script never changes it.
+"""
+import html
+import json
+import os
+import subprocess
+import sys
+from datetime import date
+
+HOME = os.path.expanduser("~")
+DATA = os.path.join(HOME, ".claude/learning/character.json")
+OUT = os.path.join(HOME, ".claude/learning/sheet.html")
+CODEMAP = os.path.join(HOME, ".claude/learning/codemap")
+PROFILE = os.path.join(HOME, ".claude/learning/profile.json")
+PROGRESS = os.path.join(HOME, ".claude/learning/progress.md")
+TECH_LEVEL = {"none": "sin conocimiento", "basic": "básico", "medium": "medio", "advanced": "avanzado"}
+
+ATTRS = [
+    ("reading", "Reading", True),
+    ("tracing", "Tracing", True),
+    ("reviewing", "Reviewing", True),
+    ("debugging", "Debugging", True),
+    ("code_writing", "Code Writing", True),
+    ("knowledge", "Knowledge", True),
+    ("logic", "Logic", True),
+    ("testing", "Testing", True),
+    ("data", "Data", True),
+]
+
+RANKS = ["Trainee", "Junior I", "Junior II", "Junior III", "Mid"]
+
+MEANINGS = {
+    "logic": [
+        "Sigue condiciones simples con ayuda",
+        "Predice salidas incluidos inputs vacíos y límites",
+        "Encuentra el input que rompe una condición y simplifica condicionales",
+        "Razona sobre cambios de estado e invariantes de bucles",
+        "Razona sobre concurrencia y orden de ejecución",
+    ],
+    "testing": [
+        "Lee un test y dice qué comprueba",
+        "Lista casos normales, límite y de error de una función",
+        "Escribe tests de comportamiento que detectan mutaciones",
+        "Elige unit vs integración y diseña fixtures y mocks",
+        "Define la estrategia de tests de una feature",
+    ],
+    "data": [
+        "Explica una tabla y sus columnas",
+        "Explica relaciones y claves de un schema",
+        "Predice resultados de queries y ORM, incluidos joins con nulos",
+        "Detecta N+1, índices que faltan y riesgos de consistencia",
+        "Modela los datos de una feature y planifica migraciones",
+    ],
+    "reading": [
+        "Explica una función corta con ayuda",
+        "Explica una función y predice sus salidas sin ayuda",
+        "Explica un módulo: contrato, efectos secundarios y caminos de error",
+        "Explica una feature entre capas y sus trade-offs",
+        "Predice el impacto de un cambio en todo el código",
+    ],
+    "tracing": [
+        "Sigue una llamada de caller a callee con ayuda",
+        "Sigue un salto sin ayuda, nombrando los datos que fluyen",
+        "Traza una feature dentro de una capa, incluido el error",
+        "Traza una petición completa UI → API → DB y vuelta",
+        "Traza flujos asíncronos, en segundo plano y entre servicios",
+    ],
+    "reviewing": [
+        "Detecta problemas de nombres y bugs obvios con ayuda",
+        "Encuentra bugs obvios y casos olvidados en un diff pequeño",
+        "Revisa un diff mediano: corrección, casos límite y tests",
+        "Revisa arquitectura, acoplamiento y seguridad",
+        "Revisa decisiones de diseño y propone alternativas",
+    ],
+    "debugging": [
+        "Reproduce un bug y lo describe con precisión",
+        "Aísla la función que falla y propone una hipótesis comprobable",
+        "Encuentra la causa raíz dentro de una capa con método",
+        "Depura problemas que cruzan capas (cliente, servidor, datos)",
+        "Depura bugs intermitentes, de timing o de entorno",
+    ],
+    "code_writing": [
+        "Escribe con mucha guía",
+        "Escribe features pequeñas con revisión",
+        "Escribe features con tests primero",
+        "Escribe features entre capas con límites limpios",
+        "Diseña una feature y sus tests sin ayuda",
+    ],
+    "knowledge": [
+        "Conoce el vocabulario",
+        "Explica los conceptos básicos del lenguaje",
+        "Explica el funcionamiento interno del framework que usa a diario",
+        "Compara enfoques con sus trade-offs",
+        "Enseña conceptos a otros con precisión",
+    ],
+}
+
+ACHIEVEMENTS = [
+    ("first-steps", "Primeros pasos", "Primera sesión de aprendizaje registrada"),
+    ("first-trial", "Primera prueba", "Primera Prueba superada"),
+    ("rank-up", "Ascenso", "Sube el rango global por primera vez"),
+    ("clean-read", "Lectura limpia", "Sesión de lectura correcta y sin hints"),
+    ("full-trace", "Ida y vuelta", "Primer rastreo L3 completo y correcto"),
+    ("bug-hunter", "Cazador de bugs", "Causa raíz encontrada sin pasar del hint 2"),
+    ("sharp-eye", "Ojo crítico", "10 must-fix detectados en revisiones"),
+    ("no-false-alarm", "Sin falsas alarmas", "Revisión con todos los must-fix y cero falsos positivos"),
+    ("streak-week", "Semana constante", "5 sesiones en 7 días"),
+    ("all-rounder", "Polivalente", "Todos los atributos en Lv 3 o más"),
+    ("comeback", "Sin óxido", "Un atributo oxidado recuperado"),
+    ("honest-check", "Examen sorpresa", "Una auditoría superada"),
+    ("edge-finder", "Caza-límites", "Input que rompe una condición encontrado sin hints"),
+    ("mutant-killer", "Mutante cazado", "3 mutaciones juzgadas bien en una sesión"),
+    ("query-oracle", "Oráculo SQL", "Resultado de un join con nulos predicho exacto"),
+]
+
+FLAGS = {"rusty": "oxidado", "under_review": "en revisión"}
+TRIAL = {"available": "Prueba disponible", "failed": "Prueba fallida: practica antes de reintentar", "locked": ""}
+
+
+def rank_index(level):
+    return min((max(level, 1) - 1) // 2, len(RANKS) - 1)
+
+
+def rank(level):
+    return RANKS[rank_index(level)]
+
+
+def bar(xp, need, cells=10):
+    filled = min(cells, (cells * min(xp, need)) // need) if need else cells
+    return "▰" * filled + "▱" * (cells - filled)
+
+
+def load():
+    with open(DATA, encoding="utf-8") as f:
+        return json.load(f)
+
+
+def overall(data):
+    core = [data["attributes"][k]["level"] for k, _, c in ATTRS if c]
+    low = min(core)
+    return low, rank(low)
+
+
+def calibration(data):
+    """Return (verdict, detail) from the confidence counters."""
+    c = data.get("calibration", {})
+    hr, hw = c.get("high_right", 0), c.get("high_wrong", 0)
+    lr, lw = c.get("low_right", 0), c.get("low_wrong", 0)
+    total = hr + hw + lr + lw
+    detail = f"seguridad alta: {hr} aciertos / {hw} fallos · seguridad baja: {lr} aciertos / {lw} fallos"
+    if total < 10:
+        return "pocos datos (mínimo 10 respuestas)", detail
+    high = hr + hw
+    if high and hw / high >= 0.3:
+        return f"tiendes a sobreestimarte ({round(100 * hw / high)}% de fallos con seguridad alta)", detail
+    low = lr + lw
+    if low and lr / low >= 0.7:
+        return f"tiendes a subestimarte ({round(100 * lr / low)}% de aciertos con seguridad baja)", detail
+    return "calibrado", detail
+
+
+def review_queue():
+    """Return (total, due_items) from the Review queue table; due_items sorted oldest first."""
+    try:
+        text = open(PROGRESS, encoding="utf-8").read()
+    except OSError:
+        return 0, []
+    if "## Review queue" not in text:
+        return 0, []
+    sec = text.split("## Review queue", 1)[1].split("\n## ", 1)[0]
+    today = date.today().isoformat()
+    rows = []
+    for line in sec.splitlines():
+        if not line.startswith("| ") or line.startswith("| Item"):
+            continue
+        cells = [c.strip() for c in line.strip().strip("|").split("|")]
+        if len(cells) >= 5:
+            rows.append((cells[3], cells[1], cells[0]))
+    due = sorted(r for r in rows if r[0] <= today)
+    return len(rows), due
+
+
+def tech_profile():
+    """Return [(tool, declared, suggested, evidence)] from the profile."""
+    try:
+        with open(PROFILE, encoding="utf-8") as f:
+            tech = json.load(f).get("tech", {})
+    except (OSError, ValueError):
+        return []
+    out = []
+    for tool in sorted(tech, key=str.lower):
+        v = tech[tool] or {}
+        out.append((tool, TECH_LEVEL.get(v.get("self"), v.get("self") or "?"),
+                    TECH_LEVEL.get(v.get("suggested"), v.get("suggested") or ""), v.get("evidence") or ""))
+    return out
+
+
+def codemap_coverage():
+    """Return [(project, seen, explained, written)] from the codemap tables."""
+    out = []
+    if not os.path.isdir(CODEMAP):
+        return out
+    for name in sorted(os.listdir(CODEMAP)):
+        if not name.endswith(".md"):
+            continue
+        counts = {"seen": 0, "explained": 0, "written": 0}
+        with open(os.path.join(CODEMAP, name), encoding="utf-8") as f:
+            for line in f:
+                cells = [c.strip().strip("`") for c in line.strip().strip("|").split("|")]
+                if len(cells) >= 4 and cells[3] in counts:
+                    counts[cells[3]] += 1
+        out.append((name[:-3], counts["seen"], counts["explained"], counts["written"]))
+    return out
+
+
+def text_sheet(data):
+    low, r = overall(data)
+    lines = ["ARTIFICER", f"Rango global: {r} (Lv {low} en el atributo más bajo)", ""]
+    for key, name, core in ATTRS:
+        a = data["attributes"][key]
+        extra = []
+        if a.get("flag"):
+            extra.append(FLAGS.get(a["flag"], a["flag"]))
+        t = TRIAL.get(a["trial"]["status"], "")
+        if t:
+            extra.append(t)
+        tail = f"  [{', '.join(extra)}]" if extra else ""
+        mark = "" if core else " ·"
+        lines.append(
+            f"{name + mark:<14} Lv {a['level']:<2} {rank(a['level']):<10} "
+            f"{bar(a['xp'], a['xp_to_next'])} {a['xp']}/{a['xp_to_next']}{tail}"
+        )
+    nxt = rank_index(low) + 1
+    if nxt < len(RANKS):
+        lines.append(f"Siguiente rango global: {RANKS[nxt]} (todos los atributos en Lv {nxt * 2 + 1} o más, cada nivel con su Prueba)")
+    else:
+        lines.append("Siguiente rango: Senior (bloqueado, criterios por definir)")
+    verdict, detail = calibration(data)
+    lines += ["", f"Calibración: {verdict}", f"  {detail}"]
+    total, due = review_queue()
+    lines += ["", f"Cola de repaso: {len(due)} vencidos de {total}" + (" (vacíala con /artificer-review)" if len(due) > 5 else "")]
+    for d, attr, item in due[:3]:
+        lines.append(f"  {d} · {attr} · {item[:90]}{'…' if len(item) > 90 else ''}")
+    tech = tech_profile()
+    lines += ["", "Tecnologías (nivel declarado):" if tech else "Tecnologías: sin declarar (se preguntan al aparecer)"]
+    for tool, lvl, sug, _ in tech:
+        lines.append(f"  {tool}: {lvl}" + (f"  [la evidencia sugiere: {sug}]" if sug else ""))
+    cov = codemap_coverage()
+    if cov:
+        lines += ["", "Codemap (visto / explicado / escrito):"]
+        for proj, s, ex, w in cov:
+            lines.append(f"  {proj}: {s} / {ex} / {w}")
+    got = {x["id"] for x in data.get("achievements", [])}
+    lines += ["", f"Logros: {len(got)}/{len(ACHIEVEMENTS)}"]
+    for aid, name, _ in ACHIEVEMENTS:
+        if aid in got:
+            lines.append(f"  ✓ {name}")
+    log = data.get("xp_log", [])[-5:]
+    if log:
+        lines += ["", "Últimas XP:"]
+        for e in reversed(log):
+            lines.append(f"  {e.get('date','')} +{e.get('xp',0)} {e.get('attribute','')} · {e.get('evidence','')}")
+    return "\n".join(lines)
+
+
+def html_sheet(data):
+    e = html.escape
+    low, r = overall(data)
+    cards = []
+    for key, name, core in ATTRS:
+        a = data["attributes"][key]
+        lvl, xp, need = a["level"], a["xp"], a["xp_to_next"]
+        pct = 100 if not need else min(100, round(100 * xp / need))
+        badges = []
+        if a.get("flag"):
+            badges.append(f'<span class="badge warn">{e(FLAGS.get(a["flag"], a["flag"]))}</span>')
+        st = a["trial"]["status"]
+        if st == "available":
+            badges.append(f'<span class="badge ok">Prueba disponible · /artificer-trial {key}</span>')
+        elif st == "failed":
+            badges.append('<span class="badge warn">Prueba fallida</span>')
+        if not core:
+            badges.append('<span class="badge muted">no cuenta para el rango</span>')
+        cards.append(f"""
+      <article class="card">
+        <header><h3>{e(name)}</h3><span class="lvl">Lv {lvl}</span></header>
+        <p class="rank">{e(rank(lvl))}</p>
+        <div class="bar" role="progressbar" aria-valuenow="{xp}" aria-valuemin="0" aria-valuemax="{need}"><span style="width:{pct}%"></span></div>
+        <p class="xp">{xp} / {need} XP</p>
+        <p class="meaning">{e(MEANINGS[key][rank_index(lvl)])}</p>
+        <div class="badges">{''.join(badges)}</div>
+      </article>""")
+    got = {x["id"]: x for x in data.get("achievements", [])}
+    ach = []
+    for aid, name, desc in ACHIEVEMENTS:
+        if aid in got:
+            ach.append(f'<li class="got"><strong>{e(name)}</strong><span>{e(desc)}</span><small>{e(got[aid].get("date",""))}</small></li>')
+        else:
+            ach.append(f'<li><strong>{e(name)}</strong><span>{e(desc)}</span></li>')
+    rows = []
+    for x in reversed(data.get("xp_log", [])[-10:]):
+        rows.append(
+            f"<tr><td>{e(str(x.get('date','')))}</td><td>{e(str(x.get('attribute','')))}</td>"
+            f"<td>{e(str(x.get('mode','')))}</td><td class='num'>+{e(str(x.get('xp',0)))}</td>"
+            f"<td>{e(str(x.get('evidence','')))}</td></tr>"
+        )
+    log = (
+        "<table><thead><tr><th>Fecha</th><th>Atributo</th><th>Modo</th><th>XP</th><th>Evidencia</th></tr></thead><tbody>"
+        + "".join(rows) + "</tbody></table>"
+        if rows else '<p class="empty">Aún no hay XP. Empieza con una tarea en assist o pide una lectura guiada.</p>'
+    )
+    meaning = MEANINGS["reading"][rank_index(low)]
+    total, due = review_queue()
+    if total:
+        queue_html = (f'<p class="sub">{len(due)} vencidos de {total}' + (' · vacíala con <code>/artificer-review</code>' if len(due) > 5 else '') + '</p>'
+            + ('<div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Atributo</th><th>Qué repasar</th></tr></thead><tbody>'
+               + "".join(f"<tr><td>{e(d)}</td><td>{e(a)}</td><td>{e(i)}</td></tr>" for d, a, i in due[:5])
+               + "</tbody></table></div>" if due else ""))
+    else:
+        queue_html = '<p class="empty">La cola está vacía.</p>'
+    tech = tech_profile()
+    if tech:
+        tech_html = ('<div class="table-wrap"><table><thead><tr><th>Tecnología</th><th>Nivel declarado</th><th>La evidencia sugiere</th><th>Nota</th></tr></thead><tbody>'
+            + "".join(f"<tr><td>{e(a)}</td><td>{e(b)}</td><td>{e(c)}</td><td>{e(d)}</td></tr>" for a, b, c, d in tech)
+            + "</tbody></table></div>")
+    else:
+        tech_html = '<p class="empty">Sin declarar. Se preguntan cuando aparecen en un proyecto o una tarea.</p>'
+    cov = codemap_coverage()
+    if cov:
+        codemap_html = ('<div class="table-wrap"><table><thead><tr><th>Proyecto</th><th>Visto</th><th>Explicado</th><th>Escrito</th></tr></thead><tbody>'
+            + "".join(f"<tr><td>{e(p)}</td><td class='num'>{s}</td><td class='num'>{x}</td><td class='num'>{w}</td></tr>" for p, s, x, w in cov)
+            + "</tbody></table></div>")
+    else:
+        codemap_html = '<p class="empty">Aún no hay codemap. Se crea al trabajar en un proyecto.</p>'
+    return f"""<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Artificer · Ficha</title>
+<style>
+:root {{
+  --bg: #f6f5f2; --surface: #ffffff; --text: #1d1d1f; --muted: #6b6b70; --line: #e3e1dc;
+  --accent: #2f6fde; --ok: #1f8a4c; --warn: #b26a00; --track: #e9e7e2;
+}}
+@media (prefers-color-scheme: dark) {{
+  :root {{ --bg: #141416; --surface: #1d1d21; --text: #ececef; --muted: #9a9aa2; --line: #2c2c32;
+    --accent: #6c9eff; --ok: #4cc27f; --warn: #e0a043; --track: #2c2c32; }}
+}}
+* {{ box-sizing: border-box; }}
+body {{ margin: 0; background: var(--bg); color: var(--text);
+  font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }}
+main {{ max-width: 980px; margin: 0 auto; padding: 32px 16px 48px; }}
+h1 {{ font-size: 28px; margin: 0; }} h2 {{ font-size: 18px; margin: 32px 0 12px; }}
+h3 {{ font-size: 16px; margin: 0; }}
+.hero {{ background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 20px; }}
+.hero .sub {{ color: var(--muted); margin: 4px 0 0; }}
+.tiers {{ display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }}
+.tier {{ padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); font-size: 13px; }}
+.tier.on {{ background: var(--accent); border-color: var(--accent); color: #fff; }}
+.tier.locked {{ border-style: dashed; }}
+.grid {{ display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }}
+.card {{ background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }}
+.card header {{ display: flex; justify-content: space-between; align-items: baseline; }}
+.lvl {{ font-weight: 700; color: var(--accent); }}
+.rank {{ margin: 2px 0 10px; color: var(--muted); }}
+.bar {{ height: 8px; background: var(--track); border-radius: 999px; overflow: hidden; }}
+.bar span {{ display: block; height: 100%; background: var(--accent); }}
+.xp {{ margin: 6px 0 0; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }}
+.meaning {{ margin: 10px 0 0; font-size: 14px; }}
+.badges {{ display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }}
+.badge {{ font-size: 12px; padding: 2px 8px; border-radius: 999px; border: 1px solid currentColor; }}
+.badge.ok {{ color: var(--ok); }} .badge.warn {{ color: var(--warn); }} .badge.muted {{ color: var(--muted); }}
+ul.ach {{ list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }}
+ul.ach li {{ background: var(--surface); border: 1px dashed var(--line); border-radius: 10px; padding: 10px 12px; opacity: .55; display: flex; flex-direction: column; gap: 2px; }}
+ul.ach li.got {{ opacity: 1; border-style: solid; border-color: var(--ok); }}
+ul.ach span {{ font-size: 13px; color: var(--muted); }} ul.ach small {{ color: var(--ok); }}
+.table-wrap {{ overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }}
+table {{ width: 100%; border-collapse: collapse; font-size: 14px; }}
+th, td {{ text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }}
+th {{ color: var(--muted); font-weight: 600; }} td.num {{ font-variant-numeric: tabular-nums; color: var(--ok); }}
+.empty {{ color: var(--muted); padding: 12px; margin: 0; }}
+footer {{ margin-top: 28px; color: var(--muted); font-size: 13px; }}
+</style>
+</head>
+<body>
+<main>
+  <section class="hero">
+    <p class="sub" style="letter-spacing:.12em;margin:0 0 4px">ARTIFICER</p>
+    <h1>{e(r)}</h1>
+    <p class="sub">Rango global = atributo más bajo (Lv {low}). En la práctica: {e(meaning.lower())}.</p>
+    <div class="tiers">
+      {''.join(f'<span class="tier{" on" if t == r else ""}">{e(t)}</span>' for t in RANKS)}
+      <span class="tier locked" title="Criterios por definir al alcanzar Mid">Senior · bloqueado</span>
+    </div>
+  </section>
+  <h2>Atributos</h2>
+  <div class="grid">{''.join(cards)}</div>
+  <h2>Calibración</h2>
+  <div class="card"><p class="rank" style="margin:0">{e(calibration(data)[0].capitalize())}</p><p class="xp">{e(calibration(data)[1])}</p></div>
+  <h2>Cola de repaso</h2>
+  {queue_html}
+  <h2>Tecnologías</h2>
+  {tech_html}
+  <h2>Codemap</h2>
+  {codemap_html}
+  <h2>Logros ({len(got)}/{len(ACHIEVEMENTS)})</h2>
+  <ul class="ach">{''.join(ach)}</ul>
+  <h2>Últimas XP</h2>
+  <div class="table-wrap">{log}</div>
+  <footer>Generado el {date.today().isoformat()} desde character.json. El nivel solo sube superando una Prueba.</footer>
+</main>
+</body>
+</html>
+"""
+
+
+def main():
+    args = sys.argv[1:]
+    data = load()
+    if "--text" in args:
+        print(text_sheet(data))
+        return
+    with open(OUT, "w", encoding="utf-8") as f:
+        f.write(html_sheet(data))
+    print(OUT)
+    if "--open" in args:
+        subprocess.Popen(["xdg-open", OUT], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+
+if __name__ == "__main__":
+    main()
