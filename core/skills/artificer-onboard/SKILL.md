@@ -31,7 +31,7 @@ Reply in the profile's `language`; if there is no profile yet, reply in the lang
 4. Write `{{ARTIFICER_HOME}}/data/profile.json`:
    `{"version": 2, "name": "Artificer", "language": "<lang>", "seniority": "junior|mid|senior", "default_level": "off|assist|core|full", "rpg": true|false, "created": "<YYYY-MM-DD>", "inline_explain_off_level": true, "tech": {"<tool>": {"self": "none|basic|medium|advanced", "since": "<date>", "evidence": "", "evidence_sessions": 0, "suggested": null}}}`
 5. If `{{ARTIFICER_HOME}}/data/progress.md` or `character.json` are missing, create them from the templates in `{{SKILLS_DIR}}/learn/`. For `seniority: mid`, start every attribute at level 3; `senior` at level 5 (trials still gate every later level). Never touch existing ones.
-6. Confirm in 2 lines and point to `{{ARTIFICER_HOME}}/README.md`. (AI tools are chosen when installing: `install.py`.)
+6. Confirm in 2 lines and point to `{{ARTIFICER_HOME}}/README.md`. (AI tools are chosen when installing: `install.py`.){{MODEL_NOTE}}
 
 If a profile already exists and the user only wants to change something, show the current values and edit only what they ask. A profile without `tech` (version 1): offer the tech survey once (now or later), and add `"tech": {}` either way.
 

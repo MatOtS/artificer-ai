@@ -17,7 +17,7 @@ def detect(home):
 
 def install(writer, base, home, values):
     claude = Path(home) / ".claude"
-    values = dict(values, PROJECT_RULES="CLAUDE.md", SKILLS_DIR=posix(claude / "skills"))
+    values = dict(values, PROJECT_RULES="CLAUDE.md", SKILLS_DIR=posix(claude / "skills"), MODEL_NOTE="")
 
     def put(src, dst):
         writer.write(dst, render(src.read_text(encoding="utf-8"), values))

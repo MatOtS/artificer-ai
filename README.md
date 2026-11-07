@@ -58,6 +58,7 @@ Then, in your coding agent: `/artificer-onboard` (short guide and your profile),
 
 - **Update**: `git pull` and `python install.py` again.
 - **Remove**: `python uninstall.py` (backup first; your data in `data/` is kept unless you add `--purge`).
+- **Model per command**: in Claude Code each command and skill picks its model (strong for specs, maps and verification, light for lookups). In Codex, Copilot and OpenCode configure it in the tool itself (Codex profiles, VS Code model picker or Auto, a `model:` line in OpenCode commands via `custom/overrides/`).
 - Codex and Copilot support is new: if something does not load, open an issue with your tool version.
 
 ## Your data and your changes

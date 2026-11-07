@@ -172,6 +172,22 @@ def prune_empty_dirs(paths, stop_at):
             d = d.parent
 
 
+MODEL_NOTE_TEXT = (
+    " Then tell the user, in 2 lines: in Claude Code every Artificer command and skill picks its model"
+    " (a strong one for thinking work like specs, maps and verification, a light one for lookups);"
+    " in {tool} this is not automatic and has to be configured in the tool itself ({how})."
+)
+MODEL_NOTE_HOW = {
+    "codex": "Codex profiles in `config.toml`, chosen when starting a session",
+    "copilot": "the model picker in the VS Code chat, or its Auto mode",
+    "opencode": "a `model:` line in the commands, via `custom/overrides/commands/`, or the model picker",
+}
+
+
+def model_note(tool, label):
+    return MODEL_NOTE_TEXT.format(tool=label, how=MODEL_NOTE_HOW[tool])
+
+
 # Frontmatter fields only Claude Code understands.
 CLAUDE_ONLY_FIELDS = ("model:", "effort:", "allowed-tools:", "tools:")
 
@@ -234,8 +250,16 @@ def install_shared_skills(writer, base, skills_dir, values, commands=True):
 
 
 def agents_values(values, home):
-    """Values for tools that read AGENTS.md in projects and skills from ~/.agents/skills."""
-    return dict(values, PROJECT_RULES="AGENTS.md", SKILLS_DIR=posix(Path(home) / ".agents" / "skills"))
+    """Values for tools that read AGENTS.md in projects and skills from ~/.agents/skills.
+    The folder is shared by Codex and OpenCode, so its text must be the same for both."""
+    note = MODEL_NOTE_TEXT.format(
+        tool="Codex and OpenCode",
+        how=f"Codex: {MODEL_NOTE_HOW['codex']}; OpenCode: {MODEL_NOTE_HOW['opencode']}")
+    return dict(values, PROJECT_RULES="AGENTS.md", SKILLS_DIR=posix(Path(home) / ".agents" / "skills"), MODEL_NOTE=note)
+
+
+def with_model_note(values, tool, label):
+    return dict(values, MODEL_NOTE=model_note(tool, label))
 
 
 def rules_text(base, values):
