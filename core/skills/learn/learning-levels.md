@@ -1,6 +1,6 @@
 # Artificer: Learning levels
 
-Single source of truth for how code gets written at each Learning level. The `artificer` skill (Artificer Method), the `learn` skill, every `/artificer-*` command and every mode in `{{ARTIFICER_HOME}}/build/skills/artificer/modes/` follow this file. Steps named here (Map, Build, Verify) are the steps of the Artificer cycle.
+Single source of truth for how code gets written at each Learning level. The `artificer` skill (Artificer Method), the `learn` skill, every `/artificer-*` command and every mode in `{{SKILLS_DIR}}/artificer/modes/` follow this file. Steps named here (Map, Build, Verify) are the steps of the Artificer cycle.
 
 ## Criterion
 **Program with AI without losing control of the code. Never vibecoding.**
@@ -57,7 +57,7 @@ User does: designs the task (change map), walks the code, proves they know where
 2. AI writes the **scaffolding** (see boundary below): files, imports, types and signatures from the change map, wiring, test structure with named cases, and function bodies left as `TODO(human): <what this must do>`. For each `TODO(human)`, send a "Learn by Doing" request (Context, Your Task, Guidance), as the `Learning` output style does.
 3. User writes the **test assertions** (red).
 4. User writes **all the logic** (green).
-5. `test-runner` runs; AI does a **senior review** of the user's code (`{{ARTIFICER_HOME}}/build/skills/artificer/modes/senior-review.md`); user fixes.
+5. `test-runner` runs; AI does a **senior review** of the user's code (`{{SKILLS_DIR}}/artificer/modes/senior-review.md`); user fixes.
 6. Short walkthrough of the scaffolding the AI wrote, so the user knows where everything landed.
 7. User approves the diff.
 User does: decides every condition and every assertion, without spending time on repetitive code.
@@ -73,7 +73,7 @@ If the user is clearly stuck after a real attempt on two pieces in a row, step t
 
 ### full
 1. User writes the change map from their decisions; AI reviews it (questions and real risks only).
-2. User writes the tests and then the code. AI is the navigator (`{{ARTIFICER_HOME}}/build/skills/artificer/modes/navigator.md`): asks, questions decisions, flags real risks, never writes the code.
+2. User writes the tests and then the code. AI is the navigator (`{{SKILLS_DIR}}/artificer/modes/navigator.md`): asks, questions decisions, flags real risks, never writes the code.
 3. `test-runner` runs; AI does a senior review of everything; user fixes.
 4. User approves the diff.
 User does: all of the code.

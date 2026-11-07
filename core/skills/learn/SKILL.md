@@ -1,6 +1,6 @@
 ---
 name: learn
-description: Artificer learn core. Shared rules for every learning mode of the Artificer Method (modes in {{ARTIFICER_HOME}}/build/skills/artificer/modes/, /artificer-debug, /artificer-explain, /artificer-trial, /artificer-stats, and the assist checkpoints), the learn path and the auto-invocation rules. Load it whenever a learn-* skill runs or when deciding whether to start one.
+description: Artificer learn core. Shared rules for every learning mode of the Artificer Method (modes in {{SKILLS_DIR}}/artificer/modes/, /artificer-debug, /artificer-explain, /artificer-trial, /artificer-stats, and the assist checkpoints), the learn path and the auto-invocation rules. Load it whenever a learn-* skill runs or when deciding whether to start one.
 user-invocable: false
 ---
 

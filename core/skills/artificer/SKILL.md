@@ -6,7 +6,7 @@ description: 'Artificer Method. The way to build software with AI without losing
 # Artificer Method
 
 **Criterion: program with AI without losing control of the code. Never vibecoding.**
-The user is the **architect**: they decide **what** gets built (intent, examples) and **how** (every design decision, see below), at every level. The Learning level (`off | assist | core | full`) only regulates **who writes the code** (see `{{ARTIFICER_HOME}}/build/skills/learn/learning-levels.md`). Every change is understood and approved by the user. Replies follow the user's profile language (`{{ARTIFICER_HOME}}/data/profile.json`); every file the method writes is in English.
+The user is the **architect**: they decide **what** gets built (intent, examples) and **how** (every design decision, see below), at every level. The Learning level (`off | assist | core | full`) only regulates **who writes the code** (see `{{SKILLS_DIR}}/learn/learning-levels.md`). Every change is understood and approved by the user. Replies follow the user's profile language (`{{ARTIFICER_HOME}}/data/profile.json`); every file the method writes is in English.
 
 Where it comes from: approvals per phase and project docs (spec-driven development), examples as the spec (behavior-driven development), red then green (test-driven development), explore before planning (Claude Code's recommended workflow), small batches and focused review (review research), and the learning layer (`learn` skill).
 

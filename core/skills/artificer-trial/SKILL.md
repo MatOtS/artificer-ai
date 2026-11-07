@@ -19,7 +19,7 @@ Arguments: $ARGUMENTS
 4. Announce in 3 lines: attribute, target level, rubric criteria (names only), and the rule: max 2 hints, using a third ends the trial.
 
 ## During
-- Run the exercise like the matching mode (`{{ARTIFICER_HOME}}/build/skills/artificer/modes/`, or `/artificer-debug` / `/artificer-explain`), but do not teach: ask, listen, and give at most hint steps 1 and 2 when asked.
+- Run the exercise like the matching mode (`{{SKILLS_DIR}}/artificer/modes/`, or `/artificer-debug` / `/artificer-explain`), but do not teach: ask, listen, and give at most hint steps 1 and 2 when asked.
 - Count hints. If the user asks for a third, explain it ends the trial as failed and confirm before giving it.
 
 ## Grading
