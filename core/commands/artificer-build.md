@@ -4,7 +4,7 @@ argument-hint: '[work item] [slice, e.g. S2]'
 model: sonnet
 effort: medium
 ---
-Use the artificer skill. Read the Learning level in `STATUS.md` (legacy `on` = `full`) and follow `{{ARTIFICER_HOME}}/build/skills/learn/learning-levels.md` for it.
+Use the artificer skill. Read the Learning level in `STATUS.md` (legacy `on` = `full`) and follow `{{SKILLS_DIR}}/learn/learning-levels.md` for it.
 
 Work item: $1
 Slice: $2 (if empty, the first unchecked slice in `map.md`)

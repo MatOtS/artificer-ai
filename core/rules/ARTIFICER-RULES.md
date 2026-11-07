@@ -15,7 +15,7 @@ If the project has `STATUS.md`, `docs/principles.md` or `work/` (legacy: `docs/c
 If the project doesn't have that structure, new or existing, suggest `/artificer-setup` (or `/artificer-onboard project` to work without it).
 
 ## Learning layer
-Profile in `{{ARTIFICER_HOME}}/data/profile.json` (language, seniority, default level, character sheet, tech profile). How code is written at each Learning level (`off | assist | core | full`, legacy `on` = `full`) is in `{{ARTIFICER_HOME}}/build/skills/learn/learning-levels.md`. Load the `learn` skill for any code task or learning request and follow it: the level comes from `STATUS.md`, else `{{ARTIFICER_HOME}}/data/projects.json`, else the profile; a user with no profile, or a project with neither, gets the `artificer-onboard` onboarding once. Progress lives in `{{ARTIFICER_HOME}}/data/`.
+Profile in `{{ARTIFICER_HOME}}/data/profile.json` (language, seniority, default level, character sheet, tech profile). How code is written at each Learning level (`off | assist | core | full`, legacy `on` = `full`) is in `{{SKILLS_DIR}}/learn/learning-levels.md`. Load the `learn` skill for any code task or learning request and follow it: the level comes from `STATUS.md`, else `{{ARTIFICER_HOME}}/data/projects.json`, else the profile; a user with no profile, or a project with neither, gets the `artificer-onboard` onboarding once. Progress lives in `{{ARTIFICER_HOME}}/data/`.
 
 ## Models and delegation
 - `/artificer-*` commands, Artificer skills and agents pin their model and effort in frontmatter; don't override them without reason.

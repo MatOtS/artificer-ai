@@ -48,12 +48,12 @@ First numbered version. Anything before it is treated as unversioned.
 
 Changes to apply:
 1. **Workflow settings**: `## Workflow` must contain Ownership, Mode, SDD files and Learning, plus the new `Framework` line. Add any missing setting by asking the user (same options and recommendations as `/sdd-setup`).
-2. **Learning level** now has four values: `off | assist | core | full` (see `{{ARTIFICER_HOME}}/build/skills/learn/learning-levels.md`).
+2. **Learning level** now has four values: `off | assist | core | full` (see `{{SKILLS_DIR}}/learn/learning-levels.md`).
    - `on`: its meaning changed (before: the AI wrote the code and then explained it; now there is no `on`). **Ask** which of the four levels the user wants, explaining each in one line. Do not convert silently.
    - `assist`: keeps its name, but now includes the change map before writing, the file walkthrough with exact code, and questions anchored to `file:line`. Tell the user in one line and keep it unless they want another level.
    - `off`: unchanged in meaning; it now ends tasks with a short file walkthrough instead of a summary. Tell the user in one line.
    - Missing: ask (recommend the profile's `default_level`).
-3. **Project `{{PROJECT_RULES}}`**: if it lacks the `## Verification` or `## Rules` sections of `{{ARTIFICER_HOME}}/build/skills/artificer/templates/project-rules.md`, propose adding them (respect `SDD files: local-only` + tracked `{{PROJECT_RULES}}`: then only list them and ask).
+3. **Project `{{PROJECT_RULES}}`**: if it lacks the `## Verification` or `## Rules` sections of `{{SKILLS_DIR}}/artificer/templates/project-rules.md`, propose adding them (respect `SDD files: local-only` + tracked `{{PROJECT_RULES}}`: then only list them and ask).
 4. **Codemap**: nothing to change in the project. Mention that `{{ARTIFICER_HOME}}/data/codemap/<project>.md` will start filling with the next task.
 5. **Output style**: set `outputStyle` in the project's `.claude/settings.local.json` for the (possibly new) Learning level, per the table in `learning-levels.md` (`off`: leave unset). This file is local and never committed.
 6. **`TODO(human)`**: the convention for code the user must write is `TODO(human)` (Claude Code's Learning output style). If the project has leftover `TODO(you)` markers from earlier, list them (`grep -rn "TODO(you)"`) and offer to rename them; this is the only change that may touch code files, and only the marker text.
