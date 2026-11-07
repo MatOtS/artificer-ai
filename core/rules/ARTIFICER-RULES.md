@@ -7,7 +7,7 @@ If the project has `STATUS.md`, `docs/principles.md` or `work/` (legacy: `docs/c
 - Load the `artificer` skill and follow its cycle (Intent, Examples, Explore, Map, Build, Verify, Close).
 - At the start of each session, read `STATUS.md` and summarize in 2 lines where we are and the next command. Legacy or outdated project: suggest `/artificer-upgrade` in one line.
 - Before touching code, read `docs/principles.md` and the active work item.
-- **The human decides what is built and how** (stack, libraries, structure, patterns, hooks, data, errors, tests, deploy, priorities). the AI raises the decisions as questions and never decides or recommends; options only on request, with pros and cons, in no order of preference, no recommendation; a data-based suggestion only when the user asks for one or says they do not know how to go on (`artificer` skill, Decisions belong to the human).
+- **The human decides what is built and how** (stack, libraries, structure, patterns, hooks, data, errors, tests, deploy, priorities). The AI raises the decisions as questions and never decides or recommends; options only on request, with pros and cons, in no order of preference, no recommendation; a data-based suggestion only when the user asks for one or says they do not know how to go on (`artificer` skill, Decisions belong to the human).
 - Nothing is implemented unless it is in an approved spec, or an approved intent and map for small changes (`/artificer-quick`).
 - Never move to the next step without explicit user approval.
 - Git is only proposed (branch, commit message, PR description); it runs only on the user's express order (`artificer` skill, Git proposals). No AI attribution.

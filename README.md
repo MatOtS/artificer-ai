@@ -37,7 +37,7 @@ Small changes: `/artificer-quick`. Project docs (product, principles, design, ar
 **5. Git, always yours.** The AI only proposes branch, commit message and PR. It runs them only on your express order, and never adds AI attribution.
 
 ## Install
-Requires Git and Python 3.
+Requires Git and Python 3.8+ (on Linux and macOS the command may be `python3`; on Windows, `python` or `py`).
 
 ```bash
 git clone https://github.com/MatOtS/artificer-ai.git
@@ -45,9 +45,20 @@ cd artificer-ai
 python install.py
 ```
 
-The installer asks which coding agents you use and installs Artificer into each one. Update with `git pull` and `python install.py` again. Remove with `python uninstall.py` (your data is kept).
+The installer asks which coding agents you use (`--tools claude-code,codex,copilot,opencode` skips the question, `--dry-run` shows what would change). Files it replaces are backed up in `~/.artificer/backups/`.
 
-Then, in your coding agent: `/artificer-onboard` (short guide and your profile), and in a project `/artificer-setup`.
+| Tool | Where it goes | How you call a command |
+|---|---|---|
+| Claude Code | `~/.claude/` (rules imported from a marked block in `~/.claude/CLAUDE.md`) | `/artificer-map` |
+| Codex | `~/.agents/skills/`, rules in `~/.codex/AGENTS.md` | `$artificer-map` (or `/skills`) |
+| GitHub Copilot (VS Code) | `~/.copilot/skills/`, rules in `~/.copilot/instructions/` | `/artificer-map` in the chat |
+| OpenCode | `~/.config/opencode/commands/`, `~/.agents/skills/`, rules in `~/.config/opencode/AGENTS.md` | `/artificer-map` |
+
+Then, in your coding agent: `/artificer-onboard` (short guide and your profile), and in a project `/artificer-setup`. Restart the tool or open a new chat after installing.
+
+- **Update**: `git pull` and `python install.py` again.
+- **Remove**: `python uninstall.py` (backup first; your data in `data/` is kept unless you add `--purge`).
+- Codex and Copilot support is new: if something does not load, open an issue with your tool version.
 
 ## Your data and your changes
 - **Data** (profile, character sheet, progress, codemaps) lives in `data/`, ignored by git. To sync it across machines, keep your own private copy of this repository and remove `data/` from `.gitignore`.

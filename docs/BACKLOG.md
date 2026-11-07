@@ -1,6 +1,6 @@
 # Artificer backlog
 
-Ideas for the framework itself (not for projects). v0.2 (Artificer Method) absorbed B-008, B-012, B-013, B-015 and B-021; B-007 (cold start) is partly covered by predicting the map before seeing it. Add freely; nothing here is approved until it becomes a plan.
+Ideas for the framework itself (not for projects). v0.2 (Artificer Method) absorbed B-008, B-012, B-013, B-015 and B-021; v0.4 (public repository) B-022, B-024, B-025 and B-026, and dropped B-020; B-007 (cold start) is partly covered by predicting the map before seeing it. Add freely; nothing here is approved until it becomes a plan.
 
 Format: `ID | title | impact (high/medium/low) | effort (S/M/L) | status (idea / exploring / planned / done / dropped)`, then notes.
 
@@ -10,7 +10,7 @@ Inspiration: [agents-pixel-dungeon](https://github.com/JoseValencia125/agents-pi
 - **B-001 | Pixel-art character sheet | high | M | idea**
   Replace or extend `sheet.html` with a pixel hero whose look changes with the overall rank (Trainee rags → Mid armor), the nine attributes as equipment slots or stat bars, achievements as pixel badges. Static HTML/CSS, sprites as inline PNG/SVG. No new dependencies. Natural first step.
 - **B-002 | Dungeon map of the project | high | L | idea**
-  SDD as a dungeon: each spec is a dungeon floor, each task a room (locked / in progress / cleared), validate is the boss door, trials are boss fights. Rendered from `specs/*/tasks.md` and `STATUS.md`. Could live in the same HTML page as the sheet.
+  The cycle as a dungeon: each work item is a dungeon floor, each slice a room (locked / in progress / cleared), Verify is the boss door, trials are boss fights. Rendered from `work/*/map.md` and `STATUS.md`. Could live in the same HTML page as the sheet.
 - **B-003 | Codemap as explored map | medium | M | idea**
   Fog of war over the project's folders: areas the user has `seen` / `explained` / `written` (codemap) get revealed; unknown code stays dark. Makes "knowledge of the code" visible.
 - **B-004 | Live agent view à la agents-pixel-dungeon | low | L | idea**
@@ -44,9 +44,9 @@ Context: generation got cheap, verification did not. Reports in 2026: more hours
 - **B-014 | Intent-first PR description | medium | S | idea**
   PR template that starts from the spec: FRs covered, what to verify by hand, known risks, what the AI wrote vs what the user wrote (by level).
 - **B-015 | Review budget per task | medium | S | done (v0.2: 200-line slices)**
-  Hard cap on diff size per task (e.g. ~100-200 lines) so every diff stays reviewable; bigger tasks must be split in `/sdd-tasks`.
+  Hard cap on diff size per task (e.g. ~100-200 lines) so every diff stays reviewable; bigger work must be split into slices in `/artificer-map`.
 - **B-016 | Reviewing XP from real PRs | medium | M | idea**
-  `learn-review-pr` on real pull requests (own or teammates' via `gh`), so daily review work trains the Reviewing attribute.
+  A user-review mode (`modes/user-review.md`) on real pull requests (own or teammates' via `gh`), so daily review work trains the Reviewing attribute.
 - **B-017 | Review metrics | low | M | idea**
   Track time to review, PR size, findings caught by human vs automated pass. Shown in the sheet.
 - **B-027 | Task time tracking and estimates per Learning level | high | M | exploring**
@@ -60,20 +60,20 @@ Context: generation got cheap, verification did not. Reports in 2026: more hours
   Verify `off`, `assist`, `core`, `full` on a real task; fix what does not work.
 - **B-019 | Upgrade existing projects | high | S | planned**
   Run `/artificer-upgrade` on projects that already use an earlier version; in-progress work items are finished as legacy or converted.
-- **B-020 | Package as a Claude Code plugin | high | L | idea**
+- **B-020 | Package as a Claude Code plugin | high | L | dropped (v0.4: own repository and installer for several AI tools instead)**
   Repo with `.claude-plugin/plugin.json`, `commands/`, `skills/`, `agents/`, `hooks/`, `output-styles/`, `bin/`; installed with `/plugin marketplace add` + `/plugin install`, removed and updated the same way. Notes: plugin commands get the plugin name as prefix (check: `/artificer:spec`); a plugin cannot write the user's `CLAUDE.md`, so `ARTIFICER-RULES.md` would be loaded by a SessionStart hook or the Artificer output style (B-023); user data stays in `~/.claude/learning/` (never inside the plugin folder, which is replaced on update). Needs B-025.
 
 - **B-021 | Command prefix | medium | M | done (v0.2: `/artificer-*`, no aliases)**
   Decide whether `/sdd-*` and `/learn-*` become `/artificer-*` (or keep both as aliases).
-- **B-022 | Sheet language from profile | low | S | idea**
+- **B-022 | Sheet language from profile | low | S | done (v0.4: `core/bin/sheet-strings.json`)**
   `learn-sheet` UI text is Spanish only; read `language` from the profile.
 - **B-023 | Artificer output style | medium | M | idea**
   Custom output style in `output-styles/` with the level rules built in (`keep-coding-instructions: true`), reading the level itself instead of mapping to Default / Explanatory / Learning. Keep it short: how to talk and work; level detail stays in `learning-levels.md`. Best shipped with the plugin (B-020), which can force it with `force-for-plugin`. Caveats: an instruction, not a guarantee; does not reach subagents; adds tokens per response.
-- **B-024 | Integrations for other AI tools | low | M | idea**
+- **B-024 | Integrations for other AI tools | low | M | done (v0.4: Codex, Copilot in VS Code, OpenCode adapters)**
   Codex CLI, Gemini CLI, Cursor, Copilot: generate their command/rules formats from `~/.claude` like `sync-opencode` does, only for tools listed in the profile's `integrations`. Build each one when someone actually uses it.
-- **B-025 | Manifest, install and uninstall | high | M | idea**
+- **B-025 | Manifest, install and uninstall | high | M | done (v0.4: `install.py`, `uninstall.py`, `~/.artificer/manifest.json`)**
   A manifest listing every Artificer file and the version; `install.sh` (copies files, adds the `@~/.claude/ARTIFICER-RULES.md` line to `CLAUDE.md` without touching the rest, onboarding on first session); `uninstall.sh` (backup first, shows the list and asks, keeps `learning/` unless asked, never deletes project files: lists what Artificer left in each project and what is safe to remove vs the user's work in `docs/` and `work/`). Superseded by the plugin for plugin users.
-- **B-026 | Artificer files under git | high | S | idea**
+- **B-026 | Artificer files under git | high | S | done (v0.4: public repository)**
   A private repository with only the Artificer files (commands, skills, agents, `bin/`, `ARTIFICER-RULES.md`, README, BACKLOG, ROADMAP, MIGRATIONS), never `learning/` (personal data) nor the rest of `~/.claude` (sessions, caches, settings). Gives history and easy rollback of framework changes, replaces the `.tar.gz` backups, and is the base of the plugin (B-020) and the manifest (B-025). Either a repo outside `~/.claude` that the files are copied or linked from, or a repo in `~/.claude` with a strict allowlist `.gitignore`. Repo creation, commits and pushes only as git proposals run on the user's order.
 - **B-028 | Review and explain confidence calibration | medium | S | idea**
   What calibration measures and how to read it in the sheet is not clear enough. Two parts: (1) explain it well: a short plain explanation in the sheet (what is asked, what the four counters mean, what "calibrado", "sobreestimarte" and "subestimarte" mean, and what to do about each); (2) review the mechanics in `learn` (Confidence calibration) and `learn-sheet` `calibration()`: thresholds (30% wrong at high confidence, 70% right at low) are arbitrary; the verdict is global, not per attribute; confidence 3 is discarded; small samples flip the verdict with a single answer; max 2 questions per session makes it slow to fill. Consider per-attribute calibration, a range instead of a verdict while data is small, and linking it to B-027 (estimate vs actual time as a second calibration signal).

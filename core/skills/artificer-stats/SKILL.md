@@ -8,7 +8,7 @@ effort: low
 ---
 Reply in the language set in `{{ARTIFICER_HOME}}/data/profile.json`. Do not modify any file yourself: the script writes the HTML.
 
-1. Run `{{ARTIFICER_HOME}}/core/bin/learn-sheet --text` and show its output as is, inside a code block. It is computed from `{{ARTIFICER_HOME}}/data/character.json`, so never recompute or round numbers yourself.
+1. Run `{{PYTHON}} {{ARTIFICER_HOME}}/core/bin/learn-sheet --text` and show its output as is, inside a code block. It is computed from `{{ARTIFICER_HOME}}/data/character.json`, so never recompute or round numbers yourself.
 2. Read the `## Learn path` and `## Gaps` sections of `{{ARTIFICER_HOME}}/data/progress.md` and add, in at most 3 lines: the next recommended mode and why, and the top open gap.
 3. Run `{{PYTHON}} {{ARTIFICER_HOME}}/core/bin/learn-sheet` (add `--open` if the user passed it or asked to see it) and give the path of the generated `sheet.html`.
 4. If more than 5 review items are due, suggest `/artificer-review`.

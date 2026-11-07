@@ -5,13 +5,17 @@
 | Adapter | Status |
 |---|---|
 | `claude_code.py` | commands, skills and agents in `~/.claude/`, rules in `~/.claude/ARTIFICER-RULES.md`, imported from a managed block in `~/.claude/CLAUDE.md` |
-| OpenCode, Codex, GitHub Copilot (VS Code) | next phase |
+| `opencode.py` | commands (plus one thin command per user-invocable skill) in `~/.config/opencode/commands/`, skills in `~/.agents/skills/`, rules inlined in a managed block of `~/.config/opencode/AGENTS.md` |
+| `codex.py` | skills in `~/.agents/skills/`, commands as user-invoked skills (`$artificer-map`), the agent as an inline skill, rules inlined in a managed block of `$CODEX_HOME/AGENTS.md` (default `~/.codex`) |
+| `copilot.py` | VS Code: skills and commands as slash skills in `~/.copilot/skills/`, rules in `~/.copilot/instructions/artificer.instructions.md` (`applyTo: "**"`) |
+
+Shared folder: `~/.agents/skills/` is read by Codex, OpenCode and VS Code. Tools that also read `~/.claude/skills/` (OpenCode, VS Code) see the same skill names twice when Claude Code is installed too; OpenCode keeps the `~/.agents/skills/` copy.
 
 | Placeholder | Filled with |
 |---|---|
 | `{{ARTIFICER_HOME}}` | absolute path of this repository clone |
 | `{{SKILLS_DIR}}` | folder where the tool's copy of the skills lives (e.g. `~/.claude/skills`) |
-| `{{PROJECT_RULES}}` | the project instructions file of the tool: `CLAUDE.md` (Claude Code), `AGENTS.md` (Codex, OpenCode), `.github/copilot-instructions.md` (Copilot) |
+| `{{PROJECT_RULES}}` | the project instructions file: `CLAUDE.md` (Claude Code), `AGENTS.md` (Codex, OpenCode, Copilot) |
 | `{{PYTHON}}` | the Python interpreter that ran `install.py` |
 
 Install state lives in `~/.artificer/manifest.json` (every file written, per tool) with backups in `~/.artificer/backups/`: files that existed before and were not installed by Artificer are backed up before being replaced; `uninstall.py` removes only the files in the manifest and the managed blocks (`<!-- artificer:begin -->` / `<!-- artificer:end -->`).

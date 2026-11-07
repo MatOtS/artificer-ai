@@ -37,7 +37,7 @@ Cambios pequeños: `/artificer-quick`. Los documentos del proyecto (producto, pr
 **5. Git, siempre tuyo.** La IA solo propone rama, mensaje de commit y PR. Los ejecuta solo con tu orden expresa y nunca añade atribución a la IA.
 
 ## Instalación
-Requiere Git y Python 3.
+Requiere Git y Python 3.8 o superior (en Linux y macOS el comando puede ser `python3`; en Windows, `python` o `py`).
 
 ```bash
 git clone https://github.com/MatOtS/artificer-ai.git
@@ -45,9 +45,20 @@ cd artificer-ai
 python install.py
 ```
 
-El instalador pregunta qué agentes de código usas e instala Artificer en cada uno. Para actualizar: `git pull` y otra vez `python install.py`. Para quitarlo: `python uninstall.py` (tus datos se conservan).
+El instalador pregunta qué agentes de código usas (`--tools claude-code,codex,copilot,opencode` evita la pregunta y `--dry-run` muestra qué cambiaría). Los archivos que reemplaza se guardan antes en `~/.artificer/backups/`.
 
-Después, en tu agente: `/artificer-onboard` (guía corta y tu perfil), y en un proyecto `/artificer-setup`.
+| Herramienta | Dónde se instala | Cómo se llama un comando |
+|---|---|---|
+| Claude Code | `~/.claude/` (las reglas se importan desde un bloque marcado en `~/.claude/CLAUDE.md`) | `/artificer-map` |
+| Codex | `~/.agents/skills/`, reglas en `~/.codex/AGENTS.md` | `$artificer-map` (o `/skills`) |
+| GitHub Copilot (VS Code) | `~/.copilot/skills/`, reglas en `~/.copilot/instructions/` | `/artificer-map` en el chat |
+| OpenCode | `~/.config/opencode/commands/`, `~/.agents/skills/`, reglas en `~/.config/opencode/AGENTS.md` | `/artificer-map` |
+
+Después, en tu agente: `/artificer-onboard` (guía corta y tu perfil), y en un proyecto `/artificer-setup`. Reinicia la herramienta o abre un chat nuevo después de instalar.
+
+- **Actualizar**: `git pull` y otra vez `python install.py`.
+- **Quitar**: `python uninstall.py` (hace backup antes; tus datos en `data/` se conservan salvo que añadas `--purge`).
+- El soporte de Codex y Copilot es nuevo: si algo no carga, abre un issue con la versión de tu herramienta.
 
 ## Tus datos y tus cambios
 - **Datos** (perfil, ficha, progreso, codemaps): viven en `data/`, que git ignora. Para sincronizarlos entre PCs, ten tu propia copia privada de este repositorio y quita `data/` del `.gitignore`.

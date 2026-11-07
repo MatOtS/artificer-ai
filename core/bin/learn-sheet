@@ -1,27 +1,46 @@
 #!/usr/bin/env python3
-"""Render the learner's character sheet from ~/.claude/learning/character.json.
+"""Render the learner's character sheet from <artificer-ai>/data/character.json.
 
 Usage:
-  learn-sheet           write ~/.claude/learning/sheet.html
+  learn-sheet           write data/sheet.html
   learn-sheet --open    write it and open it in the browser
   learn-sheet --text    print the text sheet to stdout (no file written)
 
 Numbers come only from the JSON; this script never changes it.
+UI text follows the profile language (sheet-strings.json; English fallback).
 """
 import html
 import json
-import os
-import subprocess
 import sys
+import webbrowser
 from datetime import date
+from pathlib import Path
 
-HOME = os.path.expanduser("~")
-DATA = os.path.join(HOME, ".claude/learning/character.json")
-OUT = os.path.join(HOME, ".claude/learning/sheet.html")
-CODEMAP = os.path.join(HOME, ".claude/learning/codemap")
-PROFILE = os.path.join(HOME, ".claude/learning/profile.json")
-PROGRESS = os.path.join(HOME, ".claude/learning/progress.md")
-TECH_LEVEL = {"none": "sin conocimiento", "basic": "básico", "medium": "medio", "advanced": "avanzado"}
+BIN = Path(__file__).resolve().parent
+DATA_DIR = BIN.parent.parent / "data"
+DATA = DATA_DIR / "character.json"
+OUT = DATA_DIR / "sheet.html"
+CODEMAP = DATA_DIR / "codemap"
+PROFILE = DATA_DIR / "profile.json"
+PROGRESS = DATA_DIR / "progress.md"
+
+
+def load_strings():
+    try:
+        lang = str(json.loads(PROFILE.read_text(encoding="utf-8")).get("language", "")).lower()
+    except (OSError, ValueError):
+        lang = ""
+    strings = json.loads((BIN / "sheet-strings.json").read_text(encoding="utf-8"))
+    code = "es" if lang.startswith(("es", "span")) else lang[:2]
+    return strings.get(code, strings["en"])
+
+
+S = load_strings()
+TECH_LEVEL = S["tech_level"]
+MEANINGS = S["meanings"]
+ACHIEVEMENTS = [(aid, name, desc) for aid, (name, desc) in S["achievement_list"].items()]
+FLAGS = S["flags"]
+TRIAL = {"available": S["trial_available"], "failed": S["trial_failed"], "locked": ""}
 
 ATTRS = [
     ("reading", "Reading", True),
@@ -36,93 +55,6 @@ ATTRS = [
 ]
 
 RANKS = ["Trainee", "Junior I", "Junior II", "Junior III", "Mid"]
-
-MEANINGS = {
-    "logic": [
-        "Sigue condiciones simples con ayuda",
-        "Predice salidas incluidos inputs vacíos y límites",
-        "Encuentra el input que rompe una condición y simplifica condicionales",
-        "Razona sobre cambios de estado e invariantes de bucles",
-        "Razona sobre concurrencia y orden de ejecución",
-    ],
-    "testing": [
-        "Lee un test y dice qué comprueba",
-        "Lista casos normales, límite y de error de una función",
-        "Escribe tests de comportamiento que detectan mutaciones",
-        "Elige unit vs integración y diseña fixtures y mocks",
-        "Define la estrategia de tests de una feature",
-    ],
-    "data": [
-        "Explica una tabla y sus columnas",
-        "Explica relaciones y claves de un schema",
-        "Predice resultados de queries y ORM, incluidos joins con nulos",
-        "Detecta N+1, índices que faltan y riesgos de consistencia",
-        "Modela los datos de una feature y planifica migraciones",
-    ],
-    "reading": [
-        "Explica una función corta con ayuda",
-        "Explica una función y predice sus salidas sin ayuda",
-        "Explica un módulo: contrato, efectos secundarios y caminos de error",
-        "Explica una feature entre capas y sus trade-offs",
-        "Predice el impacto de un cambio en todo el código",
-    ],
-    "tracing": [
-        "Sigue una llamada de caller a callee con ayuda",
-        "Sigue un salto sin ayuda, nombrando los datos que fluyen",
-        "Traza una feature dentro de una capa, incluido el error",
-        "Traza una petición completa UI → API → DB y vuelta",
-        "Traza flujos asíncronos, en segundo plano y entre servicios",
-    ],
-    "reviewing": [
-        "Detecta problemas de nombres y bugs obvios con ayuda",
-        "Encuentra bugs obvios y casos olvidados en un diff pequeño",
-        "Revisa un diff mediano: corrección, casos límite y tests",
-        "Revisa arquitectura, acoplamiento y seguridad",
-        "Revisa decisiones de diseño y propone alternativas",
-    ],
-    "debugging": [
-        "Reproduce un bug y lo describe con precisión",
-        "Aísla la función que falla y propone una hipótesis comprobable",
-        "Encuentra la causa raíz dentro de una capa con método",
-        "Depura problemas que cruzan capas (cliente, servidor, datos)",
-        "Depura bugs intermitentes, de timing o de entorno",
-    ],
-    "code_writing": [
-        "Escribe con mucha guía",
-        "Escribe features pequeñas con revisión",
-        "Escribe features con tests primero",
-        "Escribe features entre capas con límites limpios",
-        "Diseña una feature y sus tests sin ayuda",
-    ],
-    "knowledge": [
-        "Conoce el vocabulario",
-        "Explica los conceptos básicos del lenguaje",
-        "Explica el funcionamiento interno del framework que usa a diario",
-        "Compara enfoques con sus trade-offs",
-        "Enseña conceptos a otros con precisión",
-    ],
-}
-
-ACHIEVEMENTS = [
-    ("first-steps", "Primeros pasos", "Primera sesión de aprendizaje registrada"),
-    ("first-trial", "Primera prueba", "Primera Prueba superada"),
-    ("rank-up", "Ascenso", "Sube el rango global por primera vez"),
-    ("clean-read", "Lectura limpia", "Sesión de lectura correcta y sin hints"),
-    ("full-trace", "Ida y vuelta", "Primer rastreo L3 completo y correcto"),
-    ("bug-hunter", "Cazador de bugs", "Causa raíz encontrada sin pasar del hint 2"),
-    ("sharp-eye", "Ojo crítico", "10 must-fix detectados en revisiones"),
-    ("no-false-alarm", "Sin falsas alarmas", "Revisión con todos los must-fix y cero falsos positivos"),
-    ("streak-week", "Semana constante", "5 sesiones en 7 días"),
-    ("all-rounder", "Polivalente", "Todos los atributos en Lv 3 o más"),
-    ("comeback", "Sin óxido", "Un atributo oxidado recuperado"),
-    ("honest-check", "Examen sorpresa", "Una auditoría superada"),
-    ("edge-finder", "Caza-límites", "Input que rompe una condición encontrado sin hints"),
-    ("mutant-killer", "Mutante cazado", "3 mutaciones juzgadas bien en una sesión"),
-    ("query-oracle", "Oráculo SQL", "Resultado de un join con nulos predicho exacto"),
-]
-
-FLAGS = {"rusty": "oxidado", "under_review": "en revisión"}
-TRIAL = {"available": "Prueba disponible", "failed": "Prueba fallida: practica antes de reintentar", "locked": ""}
 
 
 def rank_index(level):
@@ -139,8 +71,9 @@ def bar(xp, need, cells=10):
 
 
 def load():
-    with open(DATA, encoding="utf-8") as f:
-        return json.load(f)
+    if not DATA.is_file():
+        sys.exit(S["no_data"].format(path=DATA.as_posix()))
+    return json.loads(DATA.read_text(encoding="utf-8"))
 
 
 def overall(data):
@@ -155,22 +88,22 @@ def calibration(data):
     hr, hw = c.get("high_right", 0), c.get("high_wrong", 0)
     lr, lw = c.get("low_right", 0), c.get("low_wrong", 0)
     total = hr + hw + lr + lw
-    detail = f"seguridad alta: {hr} aciertos / {hw} fallos · seguridad baja: {lr} aciertos / {lw} fallos"
+    detail = S["cal_detail"].format(hr=hr, hw=hw, lr=lr, lw=lw)
     if total < 10:
-        return "pocos datos (mínimo 10 respuestas)", detail
+        return S["cal_few"], detail
     high = hr + hw
     if high and hw / high >= 0.3:
-        return f"tiendes a sobreestimarte ({round(100 * hw / high)}% de fallos con seguridad alta)", detail
+        return S["cal_over"].format(pct=round(100 * hw / high)), detail
     low = lr + lw
     if low and lr / low >= 0.7:
-        return f"tiendes a subestimarte ({round(100 * lr / low)}% de aciertos con seguridad baja)", detail
-    return "calibrado", detail
+        return S["cal_under"].format(pct=round(100 * lr / low)), detail
+    return S["cal_ok"], detail
 
 
 def review_queue():
     """Return (total, due_items) from the Review queue table; due_items sorted oldest first."""
     try:
-        text = open(PROGRESS, encoding="utf-8").read()
+        text = PROGRESS.read_text(encoding="utf-8")
     except OSError:
         return 0, []
     if "## Review queue" not in text:
@@ -191,8 +124,7 @@ def review_queue():
 def tech_profile():
     """Return [(tool, declared, suggested, evidence)] from the profile."""
     try:
-        with open(PROFILE, encoding="utf-8") as f:
-            tech = json.load(f).get("tech", {})
+        tech = json.loads(PROFILE.read_text(encoding="utf-8")).get("tech", {})
     except (OSError, ValueError):
         return []
     out = []
@@ -206,24 +138,22 @@ def tech_profile():
 def codemap_coverage():
     """Return [(project, seen, explained, written)] from the codemap tables."""
     out = []
-    if not os.path.isdir(CODEMAP):
+    if not CODEMAP.is_dir():
         return out
-    for name in sorted(os.listdir(CODEMAP)):
-        if not name.endswith(".md"):
-            continue
+    for path in sorted(CODEMAP.glob("*.md")):
         counts = {"seen": 0, "explained": 0, "written": 0}
-        with open(os.path.join(CODEMAP, name), encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             for line in f:
                 cells = [c.strip().strip("`") for c in line.strip().strip("|").split("|")]
                 if len(cells) >= 4 and cells[3] in counts:
                     counts[cells[3]] += 1
-        out.append((name[:-3], counts["seen"], counts["explained"], counts["written"]))
+        out.append((path.stem, counts["seen"], counts["explained"], counts["written"]))
     return out
 
 
 def text_sheet(data):
     low, r = overall(data)
-    lines = ["ARTIFICER", f"Rango global: {r} (Lv {low} en el atributo más bajo)", ""]
+    lines = ["ARTIFICER", S["overall"].format(rank=r, low=low), ""]
     for key, name, core in ATTRS:
         a = data["attributes"][key]
         extra = []
@@ -240,32 +170,32 @@ def text_sheet(data):
         )
     nxt = rank_index(low) + 1
     if nxt < len(RANKS):
-        lines.append(f"Siguiente rango global: {RANKS[nxt]} (todos los atributos en Lv {nxt * 2 + 1} o más, cada nivel con su Prueba)")
+        lines.append(S["next_rank"].format(rank=RANKS[nxt], lv=nxt * 2 + 1))
     else:
-        lines.append("Siguiente rango: Senior (bloqueado, criterios por definir)")
+        lines.append(S["next_senior"])
     verdict, detail = calibration(data)
-    lines += ["", f"Calibración: {verdict}", f"  {detail}"]
+    lines += ["", f"{S['calibration']}: {verdict}", f"  {detail}"]
     total, due = review_queue()
-    lines += ["", f"Cola de repaso: {len(due)} vencidos de {total}" + (" (vacíala con /artificer-review)" if len(due) > 5 else "")]
+    lines += ["", f"{S['queue']}: " + S["queue_count"].format(due=len(due), total=total) + (f" ({S['queue_hint']})" if len(due) > 5 else "")]
     for d, attr, item in due[:3]:
         lines.append(f"  {d} · {attr} · {item[:90]}{'…' if len(item) > 90 else ''}")
     tech = tech_profile()
-    lines += ["", "Tecnologías (nivel declarado):" if tech else "Tecnologías: sin declarar (se preguntan al aparecer)"]
+    lines += ["", S["tech_header"] if tech else S["tech_none"]]
     for tool, lvl, sug, _ in tech:
-        lines.append(f"  {tool}: {lvl}" + (f"  [la evidencia sugiere: {sug}]" if sug else ""))
+        lines.append(f"  {tool}: {lvl}" + (f"  [{S['tech_suggests']}: {sug}]" if sug else ""))
     cov = codemap_coverage()
     if cov:
-        lines += ["", "Codemap (visto / explicado / escrito):"]
+        lines += ["", S["codemap_header"]]
         for proj, s, ex, w in cov:
             lines.append(f"  {proj}: {s} / {ex} / {w}")
     got = {x["id"] for x in data.get("achievements", [])}
-    lines += ["", f"Logros: {len(got)}/{len(ACHIEVEMENTS)}"]
+    lines += ["", f"{S['achievements']}: {len(got)}/{len(ACHIEVEMENTS)}"]
     for aid, name, _ in ACHIEVEMENTS:
         if aid in got:
             lines.append(f"  ✓ {name}")
     log = data.get("xp_log", [])[-5:]
     if log:
-        lines += ["", "Últimas XP:"]
+        lines += ["", S["xp"] + ":"]
         for e in reversed(log):
             lines.append(f"  {e.get('date','')} +{e.get('xp',0)} {e.get('attribute','')} · {e.get('evidence','')}")
     return "\n".join(lines)
@@ -284,11 +214,11 @@ def html_sheet(data):
             badges.append(f'<span class="badge warn">{e(FLAGS.get(a["flag"], a["flag"]))}</span>')
         st = a["trial"]["status"]
         if st == "available":
-            badges.append(f'<span class="badge ok">Prueba disponible · /artificer-trial {key}</span>')
+            badges.append(f'<span class="badge ok">{e(S["trial_available"])} · /artificer-trial {key}</span>')
         elif st == "failed":
-            badges.append('<span class="badge warn">Prueba fallida</span>')
+            badges.append(f'<span class="badge warn">{e(S["trial_failed_badge"])}</span>')
         if not core:
-            badges.append('<span class="badge muted">no cuenta para el rango</span>')
+            badges.append(f'<span class="badge muted">{e(S["not_ranked"])}</span>')
         cards.append(f"""
       <article class="card">
         <header><h3>{e(name)}</h3><span class="lvl">Lv {lvl}</span></header>
@@ -313,39 +243,39 @@ def html_sheet(data):
             f"<td>{e(str(x.get('evidence','')))}</td></tr>"
         )
     log = (
-        "<table><thead><tr><th>Fecha</th><th>Atributo</th><th>Modo</th><th>XP</th><th>Evidencia</th></tr></thead><tbody>"
+        f"<table><thead><tr><th>{e(S['col_date'])}</th><th>{e(S['col_attr'])}</th><th>{e(S['col_mode'])}</th><th>{e(S['col_xp'])}</th><th>{e(S['col_evidence'])}</th></tr></thead><tbody>"
         + "".join(rows) + "</tbody></table>"
-        if rows else '<p class="empty">Aún no hay XP. Empieza con una tarea en assist o pide una lectura guiada.</p>'
+        if rows else f'<p class="empty">{e(S["xp_empty"])}</p>'
     )
     meaning = MEANINGS["reading"][rank_index(low)]
     total, due = review_queue()
     if total:
-        queue_html = (f'<p class="sub">{len(due)} vencidos de {total}' + (' · vacíala con <code>/artificer-review</code>' if len(due) > 5 else '') + '</p>'
-            + ('<div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Atributo</th><th>Qué repasar</th></tr></thead><tbody>'
+        queue_html = (f'<p class="sub">{e(S["queue_count"].format(due=len(due), total=total))}' + (' · ' + e(S["queue_hint"]).replace("/artificer-review", "<code>/artificer-review</code>") if len(due) > 5 else '') + '</p>'
+            + (f'<div class="table-wrap"><table><thead><tr><th>{e(S["col_date"])}</th><th>{e(S["col_attr"])}</th><th>{e(S["col_item"])}</th></tr></thead><tbody>'
                + "".join(f"<tr><td>{e(d)}</td><td>{e(a)}</td><td>{e(i)}</td></tr>" for d, a, i in due[:5])
                + "</tbody></table></div>" if due else ""))
     else:
-        queue_html = '<p class="empty">La cola está vacía.</p>'
+        queue_html = f'<p class="empty">{e(S["queue_empty"])}</p>'
     tech = tech_profile()
     if tech:
-        tech_html = ('<div class="table-wrap"><table><thead><tr><th>Tecnología</th><th>Nivel declarado</th><th>La evidencia sugiere</th><th>Nota</th></tr></thead><tbody>'
+        tech_html = (f'<div class="table-wrap"><table><thead><tr><th>{e(S["col_tech"])}</th><th>{e(S["col_declared"])}</th><th>{e(S["col_suggests"])}</th><th>{e(S["col_note"])}</th></tr></thead><tbody>'
             + "".join(f"<tr><td>{e(a)}</td><td>{e(b)}</td><td>{e(c)}</td><td>{e(d)}</td></tr>" for a, b, c, d in tech)
             + "</tbody></table></div>")
     else:
-        tech_html = '<p class="empty">Sin declarar. Se preguntan cuando aparecen en un proyecto o una tarea.</p>'
+        tech_html = f'<p class="empty">{e(S["tech_none_html"])}</p>'
     cov = codemap_coverage()
     if cov:
-        codemap_html = ('<div class="table-wrap"><table><thead><tr><th>Proyecto</th><th>Visto</th><th>Explicado</th><th>Escrito</th></tr></thead><tbody>'
+        codemap_html = (f'<div class="table-wrap"><table><thead><tr><th>{e(S["col_project"])}</th><th>{e(S["col_seen"])}</th><th>{e(S["col_explained"])}</th><th>{e(S["col_written"])}</th></tr></thead><tbody>'
             + "".join(f"<tr><td>{e(p)}</td><td class='num'>{s}</td><td class='num'>{x}</td><td class='num'>{w}</td></tr>" for p, s, x, w in cov)
             + "</tbody></table></div>")
     else:
-        codemap_html = '<p class="empty">Aún no hay codemap. Se crea al trabajar en un proyecto.</p>'
+        codemap_html = f'<p class="empty">{e(S["codemap_empty"])}</p>'
     return f"""<!doctype html>
-<html lang="es">
+<html lang="{S['html_lang']}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Artificer · Ficha</title>
+<title>{e(S['title'])}</title>
 <style>
 :root {{
   --bg: #f6f5f2; --surface: #ffffff; --text: #1d1d1f; --muted: #6b6b70; --line: #e3e1dc;
@@ -396,27 +326,27 @@ footer {{ margin-top: 28px; color: var(--muted); font-size: 13px; }}
   <section class="hero">
     <p class="sub" style="letter-spacing:.12em;margin:0 0 4px">ARTIFICER</p>
     <h1>{e(r)}</h1>
-    <p class="sub">Rango global = atributo más bajo (Lv {low}). En la práctica: {e(meaning.lower())}.</p>
+    <p class="sub">{e(S['hero_sub'].format(low=low, meaning=meaning.lower()))}</p>
     <div class="tiers">
       {''.join(f'<span class="tier{" on" if t == r else ""}">{e(t)}</span>' for t in RANKS)}
-      <span class="tier locked" title="Criterios por definir al alcanzar Mid">Senior · bloqueado</span>
+      <span class="tier locked" title="{e(S['senior_title'])}">{e(S['senior_locked'])}</span>
     </div>
   </section>
-  <h2>Atributos</h2>
+  <h2>{e(S['attributes'])}</h2>
   <div class="grid">{''.join(cards)}</div>
-  <h2>Calibración</h2>
+  <h2>{e(S['calibration'])}</h2>
   <div class="card"><p class="rank" style="margin:0">{e(calibration(data)[0].capitalize())}</p><p class="xp">{e(calibration(data)[1])}</p></div>
-  <h2>Cola de repaso</h2>
+  <h2>{e(S['queue'])}</h2>
   {queue_html}
-  <h2>Tecnologías</h2>
+  <h2>{e(S['tech'])}</h2>
   {tech_html}
   <h2>Codemap</h2>
   {codemap_html}
-  <h2>Logros ({len(got)}/{len(ACHIEVEMENTS)})</h2>
+  <h2>{e(S['achievements'])} ({len(got)}/{len(ACHIEVEMENTS)})</h2>
   <ul class="ach">{''.join(ach)}</ul>
-  <h2>Últimas XP</h2>
+  <h2>{e(S['xp'])}</h2>
   <div class="table-wrap">{log}</div>
-  <footer>Generado el {date.today().isoformat()} desde character.json. El nivel solo sube superando una Prueba.</footer>
+  <footer>{e(S['footer'].format(date=date.today().isoformat()))}</footer>
 </main>
 </body>
 </html>
@@ -429,11 +359,10 @@ def main():
     if "--text" in args:
         print(text_sheet(data))
         return
-    with open(OUT, "w", encoding="utf-8") as f:
-        f.write(html_sheet(data))
-    print(OUT)
+    OUT.write_text(html_sheet(data), encoding="utf-8")
+    print(OUT.as_posix())
     if "--open" in args:
-        subprocess.Popen(["xdg-open", OUT], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        webbrowser.open(OUT.as_uri())
 
 
 if __name__ == "__main__":
